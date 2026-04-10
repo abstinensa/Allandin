@@ -1,421 +1,333 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Allandin</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"/>
-  <style>
-    :root {
-      --black: #050505;
-      --neon: #00ffe7;
-      --neon2: #ff003c;
-      --grey: #1a1a1a;
-      --text: #e0e0e0;
-      --muted: #666;
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--black);
-      color: var(--text);
-      font-family: 'Space Mono', monospace;
-      min-height: 100vh;
-      overflow-x: hidden;
-      cursor: crosshair;
-    }
-
-    /* Noise overlay */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 999;
-      opacity: 0.4;
-    }
-
-    /* Scanline effect */
-    body::after {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0,255,231,0.015) 2px,
-        rgba(0,255,231,0.015) 4px
-      );
-      pointer-events: none;
-      z-index: 998;
-    }
-
-    /* ── HERO ── */
-    .hero {
-      position: relative;
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      align-items: center;
-      padding: 0 6vw;
-      gap: 4rem;
-      overflow: hidden;
-    }
-
-    .hero-bg {
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 60% 80% at 70% 50%, rgba(0,255,231,0.04) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 40% at 20% 80%, rgba(255,0,60,0.06) 0%, transparent 60%);
-    }
-
-    .hero-line {
-      position: absolute;
-      top: 0; left: 50%;
-      width: 1px;
-      height: 100%;
-      background: linear-gradient(to bottom, transparent, var(--neon), transparent);
-      opacity: 0.15;
-    }
-
-    .hero-left {
-      position: relative;
-      z-index: 2;
-    }
-
-    .label {
-      font-size: 0.65rem;
-      letter-spacing: 0.4em;
-      text-transform: uppercase;
-      color: var(--neon);
-      margin-bottom: 1.5rem;
-      opacity: 0;
-      animation: fadeUp 0.6s ease 0.2s forwards;
-    }
-
-    h1 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(6rem, 14vw, 13rem);
-      line-height: 0.9;
-      letter-spacing: -0.02em;
-      color: #fff;
-      opacity: 0;
-      animation: fadeUp 0.8s ease 0.4s forwards;
-    }
-
-    h1 span {
-      color: var(--neon);
-      text-shadow: 0 0 40px rgba(0,255,231,0.5), 0 0 80px rgba(0,255,231,0.2);
-    }
-
-    .tagline {
-      margin-top: 2rem;
-      font-size: 0.75rem;
-      letter-spacing: 0.15em;
-      color: var(--muted);
-      text-transform: uppercase;
-      opacity: 0;
-      animation: fadeUp 0.8s ease 0.7s forwards;
-    }
-
-    .tagline em {
-      color: var(--neon2);
-      font-style: normal;
-    }
-
-    /* ── PHOTO ── */
-    .hero-right {
-      position: relative;
-      z-index: 2;
-      display: flex;
-      justify-content: center;
-      opacity: 0;
-      animation: fadeIn 1s ease 0.9s forwards;
-    }
-
-    .photo-frame {
-      position: relative;
-      width: min(380px, 100%);
-      aspect-ratio: 3/4;
-    }
-
-    .photo-frame::before {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      background: linear-gradient(135deg, var(--neon), transparent 50%, var(--neon2));
-      z-index: -1;
-    }
-
-    .photo-frame img,
-    .photo-placeholder {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      filter: grayscale(30%) contrast(1.1);
-    }
-
-    .photo-placeholder {
-      background: var(--grey);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      color: var(--muted);
-      font-size: 0.7rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-    }
-
-    .photo-placeholder svg {
-      width: 48px;
-      height: 48px;
-      stroke: var(--neon);
-      fill: none;
-      opacity: 0.4;
-    }
-
-    .corner {
-      position: absolute;
-      width: 20px; height: 20px;
-    }
-    .corner-tl { top: 8px; left: 8px; border-top: 2px solid var(--neon); border-left: 2px solid var(--neon); }
-    .corner-tr { top: 8px; right: 8px; border-top: 2px solid var(--neon); border-right: 2px solid var(--neon); }
-    .corner-bl { bottom: 8px; left: 8px; border-bottom: 2px solid var(--neon); border-left: 2px solid var(--neon); }
-    .corner-br { bottom: 8px; right: 8px; border-bottom: 2px solid var(--neon); border-right: 2px solid var(--neon); }
-
-    /* ── BIO SECTION ── */
-    .bio {
-      padding: 8rem 6vw;
-      display: grid;
-      grid-template-columns: 1fr 2fr;
-      gap: 4rem;
-      border-top: 1px solid rgba(255,255,255,0.05);
-      position: relative;
-    }
-
-    .bio::before {
-      content: '001';
-      position: absolute;
-      top: 4rem; right: 6vw;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 8rem;
-      color: rgba(255,255,255,0.02);
-      pointer-events: none;
-    }
-
-    .bio-label {
-      font-size: 0.65rem;
-      letter-spacing: 0.4em;
-      text-transform: uppercase;
-      color: var(--neon2);
-      padding-top: 0.4rem;
-    }
-
-    .bio-text {
-      font-size: 0.9rem;
-      line-height: 2;
-      color: #aaa;
-    }
-
-    .bio-text strong {
-      color: #fff;
-      font-weight: 700;
-    }
-
-    .bio-text p + p {
-      margin-top: 1.5rem;
-    }
-
-    /* ── STATS ── */
-    .stats {
-      padding: 4rem 6vw 8rem;
-      display: flex;
-      gap: 4rem;
-      flex-wrap: wrap;
-      border-top: 1px solid rgba(255,255,255,0.05);
-    }
-
-    .stat {
-      display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
-    }
-
-    .stat-num {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 3.5rem;
-      color: var(--neon);
-      text-shadow: 0 0 20px rgba(0,255,231,0.3);
-      line-height: 1;
-    }
-
-    .stat-label {
-      font-size: 0.6rem;
-      letter-spacing: 0.35em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    /* ── FOOTER ── */
-    footer {
-      padding: 2rem 6vw;
-      border-top: 1px solid rgba(255,255,255,0.05);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.6rem;
-      letter-spacing: 0.25em;
-      color: var(--muted);
-      text-transform: uppercase;
-    }
-
-    footer a {
-      color: var(--neon);
-      text-decoration: none;
-      transition: opacity 0.2s;
-    }
-    footer a:hover { opacity: 0.6; }
-
-    /* ── GLITCH ── */
-    .glitch {
-      position: relative;
-    }
-    .glitch::before, .glitch::after {
-      content: attr(data-text);
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      font-family: inherit;
-      font-size: inherit;
-      line-height: inherit;
-    }
-    .glitch::before {
-      color: var(--neon2);
-      clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
-      transform: translate(-3px, 0);
-      animation: glitch1 4s infinite;
-    }
-    .glitch::after {
-      color: var(--neon);
-      clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
-      transform: translate(3px, 0);
-      animation: glitch2 4s infinite;
-    }
-
-    /* ── ANIMATIONS ── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(24px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-    @keyframes glitch1 {
-      0%, 95%, 100% { transform: translate(-3px, 0); opacity: 0; }
-      96%           { transform: translate(-6px, -2px); opacity: 0.7; }
-      97%           { transform: translate(2px, 1px); opacity: 0.7; }
-      98%           { transform: translate(-3px, 0); opacity: 0; }
-    }
-    @keyframes glitch2 {
-      0%, 93%, 100% { transform: translate(3px, 0); opacity: 0; }
-      94%           { transform: translate(5px, 2px); opacity: 0.6; }
-      95%           { transform: translate(-2px, -1px); opacity: 0.6; }
-      96%           { transform: translate(3px, 0); opacity: 0; }
-    }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 768px) {
-      .hero {
-        grid-template-columns: 1fr;
-        padding-top: 5rem;
-        padding-bottom: 3rem;
-        text-align: center;
-      }
-      .hero-right { order: -1; }
-      .photo-frame { width: min(260px, 80vw); }
-      .bio { grid-template-columns: 1fr; gap: 1.5rem; }
-      h1 { font-size: clamp(5rem, 20vw, 8rem); }
-      footer { flex-direction: column; gap: 1rem; text-align: center; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALLANDIN – 1001 Netter</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:#04010f;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;font-family:'Cinzel',serif;color:#f5c842;
+  overflow:hidden;
+}
+#wrap{position:relative;width:700px;max-width:100vw;}
+#hud{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 16px;background:rgba(0,0,0,0.5);
+  border-bottom:1px solid rgba(245,200,66,0.3);
+}
+.hud-val{font-size:1rem;letter-spacing:2px;color:#f5c842;}
+.hud-lbl{font-size:0.55rem;letter-spacing:3px;color:#c8a060;margin-bottom:2px;}
+#gc{display:block;max-width:100%;cursor:crosshair;}
+#ui-overlay{
+  position:absolute;top:40px;left:0;width:100%;height:calc(100% - 40px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(4,1,15,0.88);pointer-events:none;
+}
+#ui-overlay.hidden{display:none;}
+.ui-title{
+  font-family:'Cinzel Decorative',serif;
+  font-size:clamp(1.6rem,5vw,3rem);
+  color:#f5c842;
+  text-shadow:0 0 30px rgba(245,200,66,0.5);
+  margin-bottom:0.4rem;letter-spacing:4px;
+}
+.ui-arabic{font-size:clamp(0.8rem,2vw,1.1rem);color:#c8a060;margin-bottom:1.2rem;letter-spacing:6px;}
+.ui-sub{font-size:0.72rem;letter-spacing:2px;color:rgba(200,160,96,0.75);margin-top:0.4rem;}
+.ui-score{font-size:1.1rem;color:#fff;margin:0.6rem 0;}
+.ui-btn{
+  margin-top:1.2rem;padding:10px 32px;
+  background:transparent;border:1px solid #f5c842;
+  color:#f5c842;font-family:'Cinzel',serif;font-size:0.85rem;
+  letter-spacing:3px;cursor:pointer;pointer-events:all;
+  transition:background 0.2s,color 0.2s;
+}
+.ui-btn:hover{background:#f5c842;color:#04010f;}
+.ornament{font-size:1.2rem;color:#c8a060;margin:0.4rem 0;}
+#tip{font-size:0.6rem;letter-spacing:2px;color:rgba(200,160,96,0.5);padding:5px 16px;text-align:center;background:rgba(0,0,0,0.4);}
+</style>
 </head>
 <body>
+<div id="wrap">
+  <div id="hud">
+    <div><div class="hud-lbl">NETTER</div><div class="hud-val" id="h-score">0</div></div>
+    <div style="text-align:center"><div class="hud-lbl">ALLANDIN</div><div class="hud-val" id="h-lives">♦ ♦ ♦</div></div>
+    <div style="text-align:right"><div class="hud-lbl">REKORD</div><div class="hud-val" id="h-hi">0</div></div>
+  </div>
+  <canvas id="gc" width="700" height="380"></canvas>
+  <div id="ui-overlay">
+    <div class="ui-arabic">✦ ألف ليلة وليلة ✦</div>
+    <div class="ui-title">ALLANDIN</div>
+    <div class="ornament">⟡ ⟡ ⟡</div>
+    <div class="ui-sub">FLY GJENNOM 1001 NETTER</div>
+    <div class="ui-sub" style="margin-top:0.6rem;">← → BEVEG &nbsp;|&nbsp; MELLOMROM / KLIKK = FYR ILD</div>
+    <button class="ui-btn" id="startBtn" onclick="startGame()">✦ BEGYNN EVENTYRET ✦</button>
+  </div>
+  <div id="tip">✦ unngå minaretene · samle lamper (+5) · skyt djevler (+3) · overlev 1001 netter ✦</div>
+</div>
 
-  <section class="hero">
-    <div class="hero-bg"></div>
-    <div class="hero-line"></div>
+<script>
+const canvas=document.getElementById('gc');
+const ctx=canvas.getContext('2d');
+const W=canvas.width,H=canvas.height;
+let state='start',score=0,hi=0,lives=3,frame=0,spd=2.2;
+let keys={};
+let pillars=[],lamps=[],bullets=[],enemies=[],parts=[],shootCd=0;
+const P={x:130,y:H/2,vy:0,w:62,h:24,g:0.32};
+const STARS=Array.from({length:130},()=>({
+  x:Math.random()*W,y:Math.random()*H*0.85,
+  r:Math.random()*1.5+0.3,tw:Math.random()*Math.PI*2,sp:0.012+Math.random()*0.02
+}));
+const DUNES=Array.from({length:6},(_,i)=>({
+  x:i*(W/5),w:W/4+Math.random()*60,h:28+Math.random()*22
+}));
+let moonT=0;
 
-    <div class="hero-left">
-      <p class="label">Est. Oslo · Norway</p>
-      <h1 class="glitch" data-text="ALLANDIN">ALL<span>ANDIN</span></h1>
-      <p class="tagline">Dødskul fyr · <em>Original</em> · Ekte vare</p>
-    </div>
+function drawBG(){
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#04010f');sky.addColorStop(0.65,'#0d0520');sky.addColorStop(1,'#180a05');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+  moonT+=0.0004;
+  ctx.save();ctx.translate(W-75,50);
+  ctx.beginPath();ctx.arc(0,0,26,0,Math.PI*2);ctx.fillStyle='#fffbe0';ctx.fill();
+  ctx.beginPath();ctx.arc(9+Math.sin(moonT)*3,0,22,0,Math.PI*2);ctx.fillStyle='#04010f';ctx.fill();
+  ctx.restore();
+  STARS.forEach(s=>{
+    s.tw+=s.sp;const a=0.35+Math.sin(s.tw)*0.42;
+    ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,250,200,${a})`;ctx.fill();
+  });
+  ctx.fillStyle='#180a03';
+  DUNES.forEach(d=>{
+    d.x-=0.25;if(d.x<-d.w)d.x=W+d.w;
+    ctx.beginPath();ctx.ellipse(d.x,H-8,d.w,d.h,0,Math.PI,0);ctx.fill();
+  });
+  ctx.fillStyle='#241005';ctx.fillRect(0,H-28,W,28);
+}
 
-    <div class="hero-right">
-      <div class="photo-frame">
-        <!-- Bytt ut denne seksjonen med: <img src="bilde.jpg" alt="Allandin"> -->
-        <div class="photo-placeholder">
-          <svg viewBox="0 0 24 24" stroke-width="1">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-          <span>Legg til bilde her</span>
-        </div>
-        <div class="corner corner-tl"></div>
-        <div class="corner corner-tr"></div>
-        <div class="corner corner-bl"></div>
-        <div class="corner corner-br"></div>
-      </div>
-    </div>
-  </section>
+function drawMinaret(p){
+  function tow(x,w,y,h){
+    ctx.fillStyle='#1e0e40';ctx.fillRect(x,y,w,h);
+    ctx.fillStyle='#2d1860';ctx.fillRect(x+4,y,w-8,h);
+    for(let i=0;i<4;i++){
+      ctx.fillStyle='rgba(245,200,66,0.1)';
+      ctx.fillRect(x+w*0.2,y+i*(h/4)+6,w*0.6,h/5);
+    }
+    ctx.fillStyle='#3a2080';ctx.fillRect(x-7,y+h-14,w+14,14);
+    ctx.fillStyle='#2d1860';ctx.beginPath();
+    ctx.moveTo(x-7,y+h-14);ctx.quadraticCurveTo(x+w/2,y+h-50,x+w+7,y+h-14);ctx.fill();
+    ctx.fillStyle='rgba(245,200,66,0.8)';
+    ctx.beginPath();ctx.moveTo(x+w/2-2,y-16);ctx.lineTo(x+w/2+2,y-16);
+    ctx.lineTo(x+w/2+1,y);ctx.lineTo(x+w/2-1,y);ctx.fill();
+    ctx.beginPath();ctx.arc(x+w/2,y-18,3.5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(245,200,66,0.2)';
+    ctx.fillRect(x-8,y+h-14,w+16,2);
+  }
+  tow(p.x,p.w,0,p.th);
+  tow(p.x,p.w,p.by,H-28-p.by);
+  ctx.fillStyle='rgba(245,200,66,0.2)';
+  ctx.fillRect(p.x-8,p.th-10,p.w+16,10);
+  ctx.fillRect(p.x-8,p.by,p.w+16,10);
+}
 
-  <section class="bio">
-    <div class="bio-label">Bio</div>
-    <div class="bio-text">
-      <p>
-        <strong>Allandin</strong> er ikke som andre. Han er typen som går inn i et rom og forandrer energien —
-        ikke fordi han prøver, men fordi han ikke gjør det.
-      </p>
-      <p>
-        Livet hans er bygd på egne premisser. Ekte, ufiltrert og alltid seg selv.
-        Det er ingen fasade her — bare substans, stil og en skarp sans for hva som faktisk betyr noe.
-      </p>
-      <p>
-        <strong>Oslo-basert. Globalt tenkende. Alltid i bevegelse.</strong>
-      </p>
-    </div>
-  </section>
+function drawLamp(l){
+  if(l.got)return;
+  ctx.save();ctx.translate(l.x,l.y+Math.sin(frame*0.05+l.phase)*3);
+  ctx.fillStyle='#c87020';ctx.beginPath();ctx.ellipse(0,5,11,8,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#e8943a';ctx.beginPath();ctx.ellipse(0,1,7,6,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#f5c842';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(-4,-4);ctx.bezierCurveTo(-9,-16,-2,-20,0,-12);ctx.stroke();
+  ctx.fillStyle='rgba(255,200,80,0.7)';ctx.beginPath();ctx.arc(0,4,4,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
 
-  <section class="stats">
-    <div class="stat">
-      <span class="stat-num">100%</span>
-      <span class="stat-label">Ekte vare</span>
-    </div>
-    <div class="stat">
-      <span class="stat-num">0</span>
-      <span class="stat-label">Kompromiss</span>
-    </div>
-    <div class="stat">
-      <span class="stat-num">∞</span>
-      <span class="stat-label">Energi</span>
-    </div>
-  </section>
+function drawBullet(b){
+  ctx.beginPath();ctx.arc(b.x,b.y,4,0,Math.PI*2);
+  ctx.fillStyle='#ff9030';ctx.fill();
+  ctx.beginPath();ctx.arc(b.x-7,b.y,2.5,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,140,30,0.4)';ctx.fill();
+}
 
-  <footer>
-    <span>© 2026 Allandin</span>
-    <a href="mailto:hei@allandin.no">hei@allandin.no</a>
-    <span>allandin.no</span>
-  </footer>
+function drawEnemy(e){
+  if(e.hp<=0)return;
+  ctx.save();ctx.translate(e.x,e.y+Math.sin(frame*0.07+e.phase)*4);
+  ctx.fillStyle='#3a1070';ctx.beginPath();ctx.ellipse(0,2,17,20,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#5520a0';ctx.beginPath();ctx.ellipse(0,-8,11,10,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#e8943a';ctx.beginPath();ctx.ellipse(0,-20,5,7,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(255,80,30,0.9)';
+  ctx.beginPath();ctx.arc(-6,0,4,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(6,0,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#ff1a00';
+  ctx.beginPath();ctx.arc(-6,0,2,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(6,0,2,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
 
+function drawPlayer(){
+  ctx.save();ctx.translate(P.x,P.y);
+  const tilt=Math.min(Math.max(P.vy*2.5,-20),20);
+  ctx.rotate(tilt*Math.PI/180);
+  ctx.fillStyle='rgba(130,60,200,0.25)';
+  ctx.beginPath();ctx.ellipse(0,P.h/2+3,P.w*0.55,6,0,0,Math.PI*2);ctx.fill();
+  const cg=ctx.createLinearGradient(-P.w/2,0,P.w/2,0);
+  cg.addColorStop(0,'#9a3818');cg.addColorStop(0.5,'#c04828');cg.addColorStop(1,'#9a3818');
+  ctx.fillStyle=cg;
+  if(ctx.roundRect)ctx.roundRect(-P.w/2,-P.h/2+4,P.w,P.h-4,4);
+  else ctx.rect(-P.w/2,-P.h/2+4,P.w,P.h-4);
+  ctx.fill();
+  ctx.fillStyle='#f5c842';
+  for(let i=0;i<7;i++){
+    ctx.fillRect(-P.w/2+i*9+1,-P.h/2+4,5,4);
+    ctx.fillRect(-P.w/2+i*9+1,P.h/2-5,5,4);
+  }
+  ctx.fillRect(-P.w/2,-P.h/2+4,4,P.h-8);ctx.fillRect(P.w/2-4,-P.h/2+4,4,P.h-8);
+  ctx.fillStyle='#c8a060';
+  ctx.beginPath();ctx.ellipse(-P.w/2+10,-P.h/2-2,5,9,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(P.w/2-10,-P.h/2-2,5,9,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#f0b870';ctx.beginPath();ctx.arc(0,-P.h/2-18,9,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#7030b0';ctx.beginPath();ctx.ellipse(0,-P.h/2-27,10,5,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#f5c842';ctx.beginPath();ctx.arc(7,-P.h/2-27,3.5,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
+function drawParticles(){
+  parts=parts.filter(p=>p.life>0);
+  parts.forEach(p=>{
+    ctx.globalAlpha=p.life;ctx.fillStyle=p.c;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r*p.life,0,Math.PI*2);ctx.fill();
+    p.x+=p.vx;p.y+=p.vy;p.vy+=0.06;p.life-=0.04;
+  });
+  ctx.globalAlpha=1;
+}
+
+function burst(x,y,cols){
+  for(let i=0;i<14;i++) parts.push({
+    x,y,vx:(Math.random()-.5)*5,vy:(Math.random()-1)*4,
+    life:1,r:2+Math.random()*3,c:cols[Math.floor(Math.random()*cols.length)]
+  });
+}
+
+function shoot(){
+  if(shootCd>0)return;
+  bullets.push({x:P.x+P.w/2+5,y:P.y,vx:9,done:false});
+  shootCd=18;
+  burst(P.x+P.w/2,P.y,['#ff9030','#f5c842','#ff6010']);
+}
+
+function collide(){
+  const px=P.x-P.w/2+8,py=P.y-P.h/2+5,pw=P.w-16,ph=P.h-10;
+  if(P.y-P.h/2<0){P.y=P.h/2;P.vy=1;}
+  if(P.y+P.h/2>H-28){die();return;}
+  pillars.forEach(p=>{
+    if(px<p.x+p.w&&px+pw>p.x){
+      if(py<p.th||py+ph>p.by){die();return;}
+      if(!p.ok&&px>p.x+p.w/2){
+        p.ok=true;score++;spd=2.2+score*0.06;
+        document.getElementById('h-score').textContent=score;
+      }
+    }
+  });
+  lamps.forEach(l=>{
+    if(l.got)return;
+    const dx=l.x-P.x,dy=l.y-P.y;
+    if(Math.sqrt(dx*dx+dy*dy)<28){
+      l.got=true;score+=5;spd=2.2+score*0.04;
+      document.getElementById('h-score').textContent=score;
+      burst(l.x,l.y,['#e8943a','#f5c842','#ff6010','#fff']);
+    }
+  });
+  bullets.forEach(b=>{
+    enemies.forEach(e=>{
+      if(e.hp<=0||b.done)return;
+      const dx=b.x-e.x,dy=b.y-e.y;
+      if(Math.sqrt(dx*dx+dy*dy)<22){
+        e.hp=0;b.done=true;score+=3;
+        document.getElementById('h-score').textContent=score;
+        burst(e.x,e.y,['#7030b0','#c030c0','#f5c842','#ff4020']);
+      }
+    });
+  });
+  enemies.forEach(e=>{
+    if(e.hp<=0)return;
+    const dx=e.x-P.x,dy=e.y-P.y;
+    if(Math.sqrt(dx*dx+dy*dy)<28){die();}
+  });
+}
+
+function die(){
+  burst(P.x,P.y,['#f5c842','#e8943a','#ff2020','#c8a060']);
+  lives--;
+  if(lives<=0){
+    state='dead';
+    if(score>hi){hi=score;document.getElementById('h-hi').textContent=hi;}
+    const ov=document.getElementById('ui-overlay');
+    ov.classList.remove('hidden');
+    ov.querySelector('.ui-title').textContent='EVENTYRET ER OVER';
+    ov.querySelector('.ui-arabic').textContent='✦ ألف ليلة وليلة ✦';
+    let sc=ov.querySelector('.ui-score');
+    if(!sc){sc=document.createElement('div');sc.className='ui-score';ov.insertBefore(sc,ov.querySelector('.ui-btn'));}
+    sc.innerHTML=`Netter: <b>${score}</b> &nbsp;|&nbsp; Rekord: <b>${hi}</b>`;
+    ov.querySelector('.ui-sub').textContent='';
+    ov.querySelector('.ui-btn').textContent='✦ PRØV IGJEN ✦';
+  } else {
+    P.y=H/2;P.vy=0;
+    document.getElementById('h-lives').textContent=('♦ '.repeat(lives)).trim();
+  }
+}
+
+function startGame(){
+  pillars=[];lamps=[];bullets=[];enemies=[];parts=[];
+  score=0;lives=3;spd=2.2;frame=0;shootCd=0;
+  P.y=H/2;P.vy=0;
+  document.getElementById('h-score').textContent='0';
+  document.getElementById('h-lives').textContent='♦ ♦ ♦';
+  document.getElementById('ui-overlay').classList.add('hidden');
+  state='playing';
+}
+
+function loop(){
+  ctx.clearRect(0,0,W,H);
+  drawBG();
+  if(state==='playing'){
+    frame++;
+    if(shootCd>0)shootCd--;
+    P.vy+=P.g;P.y+=P.vy;
+    if(keys['ArrowLeft']||keys['a'])P.x=Math.max(40,P.x-3.5);
+    if(keys['ArrowRight']||keys['d'])P.x=Math.min(W-60,P.x+3.5);
+    const pi=Math.max(26,72-(score*1.1|0));
+    if(frame%pi===0)pillars.push((()=>{
+      const gap=148,mh=40,mxh=H-gap-mh-55;
+      const h=mh+Math.random()*(mxh-mh);
+      return{x:W+20,th:h,by:h+gap,w:50,ok:false};
+    })());
+    if(frame%110===55)lamps.push({x:W+10,y:55+Math.random()*(H-110),got:false,phase:Math.random()*Math.PI*2});
+    if(frame%190===95&&score>2)enemies.push({x:W+30,y:55+Math.random()*(H-110),vy:(Math.random()-.5)*1.4,phase:Math.random()*Math.PI*2,hp:1});
+    pillars=pillars.filter(p=>p.x>-80);pillars.forEach(p=>p.x-=spd);
+    lamps=lamps.filter(l=>l.x>-30);lamps.forEach(l=>l.x-=spd);
+    bullets=bullets.filter(b=>!b.done&&b.x<W+20);bullets.forEach(b=>b.x+=b.vx);
+    enemies=enemies.filter(e=>e.hp>0&&e.x>-50);
+    enemies.forEach(e=>{e.x-=spd*0.65;e.y+=e.vy;if(e.y<40||e.y>H-60)e.vy*=-1;});
+    collide();
+  }
+  pillars.forEach(drawMinaret);
+  lamps.forEach(drawLamp);
+  enemies.forEach(drawEnemy);
+  bullets.forEach(drawBullet);
+  drawParticles();
+  drawPlayer();
+  requestAnimationFrame(loop);
+}
+
+canvas.addEventListener('click',()=>{if(state==='playing'){P.vy=-7;shoot();}});
+document.addEventListener('keydown',e=>{
+  keys[e.code]=true;keys[e.key]=true;
+  if(e.code==='Space'){e.preventDefault();if(state==='playing'){P.vy=-7;shoot();}}
+});
+document.addEventListener('keyup',e=>{keys[e.code]=false;keys[e.key]=false;});
+loop();
+</script>
 </body>
 </html>
