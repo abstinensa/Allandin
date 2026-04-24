@@ -9,9 +9,9 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
   background:#04010f;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
   min-height:100vh;font-family:'Cinzel',serif;color:#f5c842;
-  overflow:hidden;
+  padding:20px 0;
 }
 #wrap{position:relative;width:700px;max-width:100vw;}
 #hud{
@@ -48,6 +48,31 @@ body{
 .ui-btn:hover{background:#f5c842;color:#04010f;}
 .ornament{font-size:1.2rem;color:#c8a060;margin:0.4rem 0;}
 #tip{font-size:0.6rem;letter-spacing:2px;color:rgba(200,160,96,0.5);padding:5px 16px;text-align:center;background:rgba(0,0,0,0.4);}
+#games-nav{
+  margin-top:18px;padding:14px;width:700px;max-width:100vw;
+  background:rgba(0,0,0,0.45);border:1px solid rgba(245,200,66,0.18);
+}
+#games-nav h3{
+  text-align:center;font-family:'Cinzel Decorative',serif;font-size:0.9rem;
+  letter-spacing:5px;color:#c8a060;margin-bottom:12px;font-weight:normal;
+}
+.games-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;
+}
+.game-card{
+  display:block;text-decoration:none;padding:12px 10px;text-align:center;
+  background:linear-gradient(135deg,rgba(60,20,100,0.25),rgba(140,40,20,0.15));
+  border:1px solid rgba(245,200,66,0.35);color:#f5c842;
+  transition:all 0.25s;cursor:pointer;
+}
+.game-card:hover{
+  background:linear-gradient(135deg,rgba(120,40,180,0.45),rgba(200,70,30,0.25));
+  border-color:#f5c842;transform:translateY(-2px);
+  box-shadow:0 4px 18px rgba(245,200,66,0.2);
+}
+.game-card .g-icon{font-size:1.6rem;margin-bottom:6px;}
+.game-card .g-title{font-size:0.72rem;letter-spacing:3px;color:#f5c842;margin-bottom:3px;}
+.game-card .g-ar{font-size:0.65rem;color:#c8a060;letter-spacing:2px;}
 </style>
 </head>
 <body>
@@ -68,6 +93,32 @@ body{
   </div>
   <div id="tip">✦ unngå minaretene · samle lamper (+5) · skyt djevler (+3) · overlev 1001 netter ✦</div>
 </div>
+
+<nav id="games-nav">
+  <h3>✦ FLERE EVENTYR ✦</h3>
+  <div class="games-grid">
+    <a class="game-card" href="spill/sheherazade.html">
+      <div class="g-icon">🌙</div>
+      <div class="g-title">SHEHERAZADE</div>
+      <div class="g-ar">شهرزاد</div>
+    </a>
+    <a class="game-card" href="spill/teppe.html">
+      <div class="g-icon">🧿</div>
+      <div class="g-title">FLYVENDE TEPPE</div>
+      <div class="g-ar">بساط الريح</div>
+    </a>
+    <a class="game-card" href="spill/lampe.html">
+      <div class="g-icon">🪔</div>
+      <div class="g-title">MAGISK LAMPE</div>
+      <div class="g-ar">المصباح</div>
+    </a>
+    <a class="game-card" href="spill/alibaba.html">
+      <div class="g-icon">🗝️</div>
+      <div class="g-title">ALI BABA</div>
+      <div class="g-ar">علي بابا</div>
+    </a>
+  </div>
+</nav>
 
 <script>
 const canvas=document.getElementById('gc');
