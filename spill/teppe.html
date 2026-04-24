@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flyvende Teppe – ALLANDIN</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:#04010f;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;font-family:'Cinzel',serif;color:#f5c842;overflow:hidden;
+}
+a.back{
+  position:fixed;top:14px;left:14px;z-index:5;text-decoration:none;color:#c8a060;
+  font-size:0.72rem;letter-spacing:3px;border:1px solid rgba(200,160,96,0.4);
+  padding:6px 14px;transition:all 0.2s;
+}
+a.back:hover{background:#f5c842;color:#04010f;border-color:#f5c842;}
+#wrap{position:relative;width:700px;max-width:100vw;}
+#hud{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 16px;background:rgba(0,0,0,0.5);
+  border-bottom:1px solid rgba(245,200,66,0.3);
+}
+.hud-val{font-size:1rem;letter-spacing:2px;color:#f5c842;}
+.hud-lbl{font-size:0.55rem;letter-spacing:3px;color:#c8a060;margin-bottom:2px;}
+#gc{display:block;max-width:100%;cursor:crosshair;background:#04010f;}
+#overlay{
+  position:absolute;top:40px;left:0;width:100%;height:calc(100% - 40px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(4,1,15,0.88);pointer-events:none;
+}
+#overlay.hide{display:none;}
+.t-arabic{font-size:clamp(0.8rem,2vw,1.1rem);color:#c8a060;margin-bottom:0.6rem;letter-spacing:6px;}
+.t-title{
+  font-family:'Cinzel Decorative',serif;font-size:clamp(1.4rem,4.5vw,2.6rem);
+  color:#f5c842;text-shadow:0 0 30px rgba(245,200,66,0.5);
+  margin-bottom:0.4rem;letter-spacing:4px;text-align:center;
+}
+.t-sub{font-size:0.68rem;letter-spacing:2px;color:rgba(200,160,96,0.75);margin-top:0.4rem;text-align:center;}
+.t-score{font-size:1.05rem;color:#fff;margin:0.6rem 0;}
+.ornament{font-size:1.1rem;color:#c8a060;margin:0.4rem 0;}
+.btn{
+  margin-top:1rem;padding:10px 32px;
+  background:transparent;border:1px solid #f5c842;
+  color:#f5c842;font-family:'Cinzel',serif;font-size:0.82rem;
+  letter-spacing:3px;cursor:pointer;pointer-events:all;transition:all 0.2s;
+}
+.btn:hover{background:#f5c842;color:#04010f;}
+#tip{font-size:0.58rem;letter-spacing:2px;color:rgba(200,160,96,0.5);padding:6px 16px;text-align:center;background:rgba(0,0,0,0.4);}
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← TILBAKE</a>
+<div id="wrap">
+  <div id="hud">
+    <div><div class="hud-lbl">EDELSTENER</div><div class="hud-val" id="h-score">0</div></div>
+    <div style="text-align:center"><div class="hud-lbl">TEPPE</div><div class="hud-val" id="h-lives">♦ ♦ ♦</div></div>
+    <div style="text-align:right"><div class="hud-lbl">REKORD</div><div class="hud-val" id="h-hi">0</div></div>
+  </div>
+  <canvas id="gc" width="700" height="420"></canvas>
+  <div id="overlay">
+    <div class="t-arabic">✦ بساط الريح ✦</div>
+    <div class="t-title">FLYVENDE TEPPE</div>
+    <div class="ornament">⟡ ⟡ ⟡</div>
+    <div class="t-sub">SAML EDELSTENER · UNNGÅ STORMSKYER</div>
+    <div class="t-sub" style="margin-top:0.6rem;">← → ↑ ↓ / WASD &nbsp;·&nbsp; BEVEG TEPPET</div>
+    <button class="btn" onclick="begin()">✦ LØFT TEPPET ✦</button>
+  </div>
+  <div id="tip">✦ edelstener +5 · gyllen skatt +15 · unngå mørke skyer ✦</div>
+</div>
+
+<script>
+const cv=document.getElementById('gc'),ctx=cv.getContext('2d');
+const W=cv.width,H=cv.height;
+let state='menu',score=0,hi=0,lives=3,frame=0;
+const K={};
+const carpet={x:120,y:H/2,w:70,h:18,vx:0,vy:0};
+let gems=[],clouds=[],parts=[],stars=[];
+for(let i=0;i<120;i++)stars.push({x:Math.random()*W,y:Math.random()*H*0.9,r:Math.random()*1.5+0.3,t:Math.random()*6,s:0.01+Math.random()*0.02});
+
+function drawBG(){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#04010f');g.addColorStop(0.6,'#120525');g.addColorStop(1,'#2a0f20');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.translate(W-80,60);
+  ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);ctx.fillStyle='#fffbe0';ctx.fill();
+  ctx.beginPath();ctx.arc(8,0,18,0,Math.PI*2);ctx.fillStyle='#120525';ctx.fill();
+  ctx.restore();
+  stars.forEach(s=>{
+    s.t+=s.s;const a=0.3+Math.sin(s.t)*0.5;
+    ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,250,200,${a})`;ctx.fill();
+  });
+  // silhouette city bottom
+  ctx.fillStyle='#0a0310';
+  for(let i=0;i<6;i++){
+    const x=i*(W/6),w=W/6,h=30+((i*37)%18);
+    ctx.fillRect(x,H-h,w,h);
+    ctx.beginPath();ctx.arc(x+w/2,H-h,w*0.35,Math.PI,0);ctx.fill();
+  }
+}
+
+function drawCarpet(){
+  ctx.save();ctx.translate(carpet.x,carpet.y);
+  const tilt=Math.max(-0.2,Math.min(0.2,carpet.vy*0.04));
+  ctx.rotate(tilt);
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.25)';
+  ctx.beginPath();ctx.ellipse(0,12,carpet.w/2,4,0,0,Math.PI*2);ctx.fill();
+  // carpet body
+  const wave=Math.sin(frame*0.15)*2;
+  const cg=ctx.createLinearGradient(-carpet.w/2,0,carpet.w/2,0);
+  cg.addColorStop(0,'#7020a0');cg.addColorStop(0.5,'#c02080');cg.addColorStop(1,'#7020a0');
+  ctx.fillStyle=cg;
+  ctx.beginPath();
+  ctx.moveTo(-carpet.w/2,-carpet.h/2+wave);
+  ctx.lineTo(carpet.w/2,-carpet.h/2-wave);
+  ctx.lineTo(carpet.w/2,carpet.h/2-wave);
+  ctx.lineTo(-carpet.w/2,carpet.h/2+wave);
+  ctx.closePath();ctx.fill();
+  // gold trim
+  ctx.fillStyle='#f5c842';
+  for(let i=-3;i<=3;i++){
+    ctx.fillRect(i*10-1,-carpet.h/2+wave*(i/3)+2,2,carpet.h-4);
+  }
+  // fringes
+  ctx.strokeStyle='#f5c842';ctx.lineWidth=1;
+  for(let i=-3;i<=3;i++){
+    ctx.beginPath();
+    ctx.moveTo(-carpet.w/2-1,i*2+wave);
+    ctx.lineTo(-carpet.w/2-5,i*2+1+wave);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(carpet.w/2+1,i*2-wave);
+    ctx.lineTo(carpet.w/2+5,i*2+1-wave);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawGem(g){
+  ctx.save();ctx.translate(g.x,g.y+Math.sin(frame*0.08+g.p)*3);
+  ctx.rotate(frame*0.04);
+  const col=g.gold?'#f5c842':['#4aa8f0','#f04a8a','#4af08a','#f0a84a'][g.c];
+  ctx.fillStyle=col;
+  ctx.beginPath();
+  ctx.moveTo(0,-10);ctx.lineTo(8,-3);ctx.lineTo(5,8);
+  ctx.lineTo(-5,8);ctx.lineTo(-8,-3);ctx.closePath();ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.45)';
+  ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(3,-3);ctx.lineTo(0,0);ctx.closePath();ctx.fill();
+  ctx.restore();
+}
+
+function drawCloud(c){
+  ctx.save();ctx.translate(c.x,c.y);
+  ctx.fillStyle='rgba(40,10,60,0.9)';
+  for(const p of c.puffs){
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+  }
+  // lightning flicker
+  if(Math.random()<0.04){
+    ctx.strokeStyle='#f5c842';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(0,10);ctx.lineTo(-4,20);ctx.lineTo(2,25);ctx.lineTo(-2,35);ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function makeCloud(){
+  const r=18+Math.random()*8;
+  const puffs=[];
+  for(let i=0;i<5;i++){
+    puffs.push({x:(i-2)*10+Math.random()*4,y:Math.random()*8-4,r:r+Math.random()*6});
+  }
+  return {x:W+40,y:50+Math.random()*(H-120),vx:-(2.2+Math.random()*1.4+score*0.01),puffs};
+}
+
+function burst(x,y,cols){
+  for(let i=0;i<12;i++)parts.push({
+    x,y,vx:(Math.random()-.5)*5,vy:(Math.random()-1)*4,life:1,r:2+Math.random()*3,
+    c:cols[Math.floor(Math.random()*cols.length)]
+  });
+}
+
+function drawParts(){
+  parts=parts.filter(p=>p.life>0);
+  parts.forEach(p=>{
+    ctx.globalAlpha=p.life;ctx.fillStyle=p.c;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r*p.life,0,Math.PI*2);ctx.fill();
+    p.x+=p.vx;p.y+=p.vy;p.vy+=0.08;p.life-=0.04;
+  });
+  ctx.globalAlpha=1;
+}
+
+function hit(a,b,r){const dx=a.x-b.x,dy=a.y-b.y;return dx*dx+dy*dy<r*r;}
+
+function die(){
+  burst(carpet.x,carpet.y,['#c02080','#f5c842','#ff4020','#fff']);
+  lives--;
+  document.getElementById('h-lives').textContent=('♦ '.repeat(Math.max(0,lives))).trim()||'—';
+  if(lives<=0){
+    state='dead';
+    if(score>hi){hi=score;document.getElementById('h-hi').textContent=hi;}
+    const ov=document.getElementById('overlay');
+    ov.classList.remove('hide');
+    ov.querySelector('.t-title').textContent='TEPPET FALT';
+    const subs=ov.querySelectorAll('.t-sub');
+    subs[0].innerHTML=`Edelstener: <b style="color:#f5c842;">${score}</b> &nbsp;·&nbsp; Rekord: <b style="color:#f5c842;">${hi}</b>`;
+    if(subs[1])subs[1].textContent='';
+    ov.querySelector('.btn').textContent='✦ LØFT IGJEN ✦';
+  } else {
+    carpet.x=120;carpet.y=H/2;carpet.vx=0;carpet.vy=0;
+    gems=[];clouds=[];
+  }
+}
+
+function begin(){
+  state='play';score=0;lives=3;frame=0;
+  carpet.x=120;carpet.y=H/2;carpet.vx=0;carpet.vy=0;
+  gems=[];clouds=[];parts=[];
+  document.getElementById('h-score').textContent='0';
+  document.getElementById('h-lives').textContent='♦ ♦ ♦';
+  document.getElementById('overlay').classList.add('hide');
+}
+
+function loop(){
+  ctx.clearRect(0,0,W,H);
+  drawBG();
+  if(state==='play'){
+    frame++;
+    let ax=0,ay=0;
+    if(K['ArrowLeft']||K['a'])ax-=0.5;
+    if(K['ArrowRight']||K['d'])ax+=0.5;
+    if(K['ArrowUp']||K['w'])ay-=0.5;
+    if(K['ArrowDown']||K['s'])ay+=0.5;
+    carpet.vx=carpet.vx*0.9+ax;
+    carpet.vy=carpet.vy*0.9+ay;
+    carpet.x=Math.max(40,Math.min(W-40,carpet.x+carpet.vx));
+    carpet.y=Math.max(30,Math.min(H-30,carpet.y+carpet.vy));
+
+    if(frame%70===0)gems.push({x:W+20,y:40+Math.random()*(H-80),vx:-2.5-score*0.01,p:Math.random()*6,c:Math.floor(Math.random()*4),gold:Math.random()<0.12});
+    if(frame%95===0&&frame>120)clouds.push(makeCloud());
+
+    gems=gems.filter(g=>g.x>-20&&!g.got);
+    gems.forEach(g=>{
+      g.x+=g.vx;
+      if(hit(g,carpet,30)){
+        g.got=true;
+        const v=g.gold?15:5;
+        score+=v;
+        document.getElementById('h-score').textContent=score;
+        burst(g.x,g.y,g.gold?['#f5c842','#fff','#ff9030']:['#4aa8f0','#f0a84a','#fff']);
+      }
+    });
+
+    clouds=clouds.filter(c=>c.x>-80);
+    clouds.forEach(c=>{
+      c.x+=c.vx;
+      if(Math.abs(c.x-carpet.x)<30&&Math.abs(c.y-carpet.y)<26&&!c.hit){
+        c.hit=true;die();
+      }
+    });
+  }
+  clouds.forEach(drawCloud);
+  gems.forEach(drawGem);
+  drawParts();
+  drawCarpet();
+  requestAnimationFrame(loop);
+}
+
+document.addEventListener('keydown',e=>{K[e.code]=true;K[e.key]=true;if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code))e.preventDefault();});
+document.addEventListener('keyup',e=>{K[e.code]=false;K[e.key]=false;});
+loop();
+</script>
+</body>
+</html>

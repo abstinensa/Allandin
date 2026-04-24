@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Magisk Lampe – ALLANDIN</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:#04010f;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;font-family:'Cinzel',serif;color:#f5c842;overflow:hidden;
+  background-image:
+    radial-gradient(ellipse at 50% 50%,rgba(80,20,120,0.2),transparent 60%);
+}
+a.back{
+  position:fixed;top:14px;left:14px;z-index:5;text-decoration:none;color:#c8a060;
+  font-size:0.72rem;letter-spacing:3px;border:1px solid rgba(200,160,96,0.4);
+  padding:6px 14px;transition:all 0.2s;
+}
+a.back:hover{background:#f5c842;color:#04010f;border-color:#f5c842;}
+#wrap{position:relative;width:700px;max-width:100vw;}
+#hud{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 16px;background:rgba(0,0,0,0.5);
+  border-bottom:1px solid rgba(245,200,66,0.3);
+}
+.hud-val{font-size:1rem;letter-spacing:2px;color:#f5c842;}
+.hud-lbl{font-size:0.55rem;letter-spacing:3px;color:#c8a060;margin-bottom:2px;}
+#gc{display:block;max-width:100%;cursor:crosshair;background:#04010f;}
+#overlay{
+  position:absolute;top:40px;left:0;width:100%;height:calc(100% - 40px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(4,1,15,0.88);pointer-events:none;
+}
+#overlay.hide{display:none;}
+.t-arabic{font-size:clamp(0.8rem,2vw,1.1rem);color:#c8a060;margin-bottom:0.6rem;letter-spacing:6px;}
+.t-title{
+  font-family:'Cinzel Decorative',serif;font-size:clamp(1.4rem,4.5vw,2.6rem);
+  color:#f5c842;text-shadow:0 0 30px rgba(245,200,66,0.5);
+  margin-bottom:0.4rem;letter-spacing:4px;text-align:center;
+}
+.t-sub{font-size:0.68rem;letter-spacing:2px;color:rgba(200,160,96,0.75);margin-top:0.4rem;text-align:center;}
+.ornament{font-size:1.1rem;color:#c8a060;margin:0.4rem 0;}
+.btn{
+  margin-top:1rem;padding:10px 32px;background:transparent;border:1px solid #f5c842;
+  color:#f5c842;font-family:'Cinzel',serif;font-size:0.82rem;
+  letter-spacing:3px;cursor:pointer;pointer-events:all;transition:all 0.2s;
+}
+.btn:hover{background:#f5c842;color:#04010f;}
+#tip{font-size:0.58rem;letter-spacing:2px;color:rgba(200,160,96,0.5);padding:6px 16px;text-align:center;background:rgba(0,0,0,0.4);}
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← TILBAKE</a>
+<div id="wrap">
+  <div id="hud">
+    <div><div class="hud-lbl">ØNSKER</div><div class="hud-val" id="h-score">0</div></div>
+    <div style="text-align:center"><div class="hud-lbl">KOMBO</div><div class="hud-val" id="h-combo">×1</div></div>
+    <div style="text-align:right"><div class="hud-lbl">TID</div><div class="hud-val" id="h-time">45</div></div>
+  </div>
+  <canvas id="gc" width="700" height="420"></canvas>
+  <div id="overlay">
+    <div class="t-arabic">✦ المصباح السحري ✦</div>
+    <div class="t-title">MAGISK LAMPE</div>
+    <div class="ornament">⟡ ⟡ ⟡</div>
+    <div class="t-sub">KLIKK DJINNENE · UNNGÅ DEMONER</div>
+    <div class="t-sub" style="margin-top:0.6rem;">GYLNE DJINNER +3 &nbsp;·&nbsp; DEMONER −5 &nbsp;·&nbsp; 45 SEKUNDER</div>
+    <button class="btn" onclick="begin()">✦ GNI LAMPEN ✦</button>
+  </div>
+  <div id="tip">✦ klikk raskt for kombo-bonus · pass deg for røde demoner ✦</div>
+</div>
+
+<script>
+const cv=document.getElementById('gc'),ctx=cv.getContext('2d');
+const W=cv.width,H=cv.height;
+let state='menu',score=0,combo=1,time=45,frame=0;
+const slots=[];
+const ROWS=3,COLS=5;
+const padX=60,padY=40,sw=(W-padX*2)/COLS,sh=(H-padY*2)/ROWS;
+for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+  slots.push({x:padX+sw*(c+0.5),y:padY+sh*(r+0.7),occ:null});
+}
+let djinns=[],parts=[],timerId=null,spawnId=null,lastHitT=0;
+let stars=[];
+for(let i=0;i<90;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.3+0.3,t:Math.random()*6,s:0.01+Math.random()*0.02});
+
+function drawBG(){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#04010f');g.addColorStop(0.7,'#120525');g.addColorStop(1,'#1a0530');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  stars.forEach(s=>{
+    s.t+=s.s;const a=0.3+Math.sin(s.t)*0.5;
+    ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,250,200,${a})`;ctx.fill();
+  });
+}
+
+function drawLamp(s){
+  ctx.save();ctx.translate(s.x,s.y+18);
+  ctx.fillStyle='rgba(0,0,0,0.35)';
+  ctx.beginPath();ctx.ellipse(0,10,26,6,0,0,Math.PI*2);ctx.fill();
+  // base shine
+  const lg=ctx.createRadialGradient(0,0,2,0,0,30);
+  lg.addColorStop(0,'#f5c842');lg.addColorStop(0.5,'#c87020');lg.addColorStop(1,'#5a2010');
+  ctx.fillStyle=lg;
+  ctx.beginPath();ctx.ellipse(0,3,22,13,0,0,Math.PI*2);ctx.fill();
+  // spout
+  ctx.fillStyle='#c87020';
+  ctx.beginPath();
+  ctx.moveTo(18,-1);ctx.lineTo(34,-6);ctx.lineTo(34,2);ctx.lineTo(20,5);
+  ctx.closePath();ctx.fill();
+  // handle
+  ctx.strokeStyle='#c87020';ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(-18,-2);ctx.bezierCurveTo(-28,-14,-14,-18,-12,-4);ctx.stroke();
+  // gold rim
+  ctx.strokeStyle='#f5c842';ctx.lineWidth=1;
+  ctx.beginPath();ctx.ellipse(0,-4,18,4,0,0,Math.PI*2);ctx.stroke();
+  ctx.restore();
+}
+
+function drawDjinn(d){
+  const s=d.life<0.3?d.life/0.3:1;
+  const y=d.y - (1 - Math.min(1,d.grow*0.06))*40;
+  ctx.save();ctx.translate(d.x,y);
+  ctx.scale(s,s);
+  if(d.type==='demon'){
+    // red demon
+    ctx.fillStyle='rgba(150,10,10,0.6)';
+    ctx.beginPath();ctx.ellipse(0,-14,20,32,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#8a1010';
+    ctx.beginPath();ctx.arc(0,-26,15,0,Math.PI*2);ctx.fill();
+    // horns
+    ctx.fillStyle='#1a0505';
+    ctx.beginPath();ctx.moveTo(-10,-36);ctx.lineTo(-15,-48);ctx.lineTo(-6,-38);ctx.fill();
+    ctx.beginPath();ctx.moveTo(10,-36);ctx.lineTo(15,-48);ctx.lineTo(6,-38);ctx.fill();
+    // eyes
+    ctx.fillStyle='#ffd020';
+    ctx.beginPath();ctx.arc(-5,-26,2.5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(5,-26,2.5,0,Math.PI*2);ctx.fill();
+    // fangs
+    ctx.fillStyle='#fff';
+    ctx.beginPath();ctx.moveTo(-3,-20);ctx.lineTo(-1,-15);ctx.lineTo(1,-20);ctx.fill();
+    ctx.beginPath();ctx.moveTo(3,-20);ctx.lineTo(5,-15);ctx.lineTo(7,-20);ctx.fill();
+  } else {
+    const col=d.type==='gold'?'#f5c842':'#6a30c0';
+    const lit=d.type==='gold'?'#fff0a0':'#a070e8';
+    ctx.fillStyle=`rgba(100,50,200,0.3)`;
+    ctx.beginPath();ctx.ellipse(0,-14,22,32,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=col;
+    ctx.beginPath();ctx.ellipse(0,-14,18,28,0,0,Math.PI*2);ctx.fill();
+    // head
+    ctx.fillStyle=lit;
+    ctx.beginPath();ctx.arc(0,-28,12,0,Math.PI*2);ctx.fill();
+    // turban
+    ctx.fillStyle=d.type==='gold'?'#c87020':'#3a1070';
+    ctx.beginPath();ctx.ellipse(0,-36,13,7,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#f5c842';
+    ctx.beginPath();ctx.arc(5,-37,2.5,0,Math.PI*2);ctx.fill();
+    // eyes
+    ctx.fillStyle='#04010f';
+    ctx.beginPath();ctx.arc(-4,-28,1.5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(4,-28,1.5,0,Math.PI*2);ctx.fill();
+    // smile
+    ctx.strokeStyle='#04010f';ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.arc(0,-24,3,0.2,Math.PI-0.2);ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function spawn(){
+  if(state!=='play')return;
+  const free=slots.filter(s=>!s.occ);
+  if(!free.length)return;
+  const s=free[Math.floor(Math.random()*free.length)];
+  const r=Math.random();
+  let type='normal';
+  if(r<0.18)type='demon';
+  else if(r<0.28)type='gold';
+  const d={x:s.x,y:s.y,slot:s,type,life:1,grow:0,clicked:false,ttl:(type==='gold'?55:type==='demon'?110:90)+Math.random()*40};
+  s.occ=d;djinns.push(d);
+}
+
+function burst(x,y,cols){
+  for(let i=0;i<14;i++)parts.push({
+    x,y,vx:(Math.random()-.5)*6,vy:(Math.random()-1)*5,life:1,r:2+Math.random()*3,
+    c:cols[Math.floor(Math.random()*cols.length)]
+  });
+}
+
+function drawParts(){
+  parts=parts.filter(p=>p.life>0);
+  parts.forEach(p=>{
+    ctx.globalAlpha=p.life;ctx.fillStyle=p.c;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r*p.life,0,Math.PI*2);ctx.fill();
+    p.x+=p.vx;p.y+=p.vy;p.vy+=0.08;p.life-=0.035;
+  });
+  ctx.globalAlpha=1;
+}
+
+function hitTest(mx,my){
+  for(const d of djinns){
+    if(d.clicked)continue;
+    const dx=mx-d.x,dy=my-(d.y-24);
+    if(dx*dx+dy*dy<520){return d;}
+  }
+  return null;
+}
+
+cv.addEventListener('click',e=>{
+  if(state!=='play')return;
+  const r=cv.getBoundingClientRect();
+  const mx=(e.clientX-r.left)*(W/r.width),my=(e.clientY-r.top)*(H/r.height);
+  const d=hitTest(mx,my);
+  if(!d)return;
+  d.clicked=true;
+  if(d.type==='demon'){
+    score=Math.max(0,score-5);combo=1;
+    burst(d.x,d.y-20,['#ff3020','#8a1010','#f5c842']);
+  } else {
+    const now=performance.now();
+    if(now-lastHitT<700)combo=Math.min(9,combo+1);else combo=1;
+    lastHitT=now;
+    const base=d.type==='gold'?3:1;
+    score+=base*combo;
+    burst(d.x,d.y-20,d.type==='gold'?['#f5c842','#fff','#ff9030']:['#6a30c0','#a070e8','#f5c842']);
+  }
+  document.getElementById('h-score').textContent=score;
+  document.getElementById('h-combo').textContent='×'+combo;
+  setTimeout(()=>{if(d.slot.occ===d)d.slot.occ=null;djinns=djinns.filter(x=>x!==d);},20);
+});
+
+function begin(){
+  state='play';score=0;combo=1;time=45;frame=0;
+  djinns=[];parts=[];slots.forEach(s=>s.occ=null);
+  document.getElementById('h-score').textContent='0';
+  document.getElementById('h-combo').textContent='×1';
+  document.getElementById('h-time').textContent='45';
+  document.getElementById('overlay').classList.add('hide');
+  if(timerId)clearInterval(timerId);
+  if(spawnId)clearInterval(spawnId);
+  timerId=setInterval(()=>{
+    time--;document.getElementById('h-time').textContent=time;
+    if(time<=0)end();
+  },1000);
+  spawnId=setInterval(spawn,520);
+}
+
+function end(){
+  state='over';
+  clearInterval(timerId);clearInterval(spawnId);
+  const ov=document.getElementById('overlay');
+  ov.classList.remove('hide');
+  ov.querySelector('.t-title').textContent='NATTEN ER OVER';
+  const subs=ov.querySelectorAll('.t-sub');
+  subs[0].innerHTML=`Ønsker oppfylt: <b style="color:#f5c842;">${score}</b>`;
+  if(subs[1])subs[1].textContent='';
+  ov.querySelector('.btn').textContent='✦ GNI IGJEN ✦';
+}
+
+function loop(){
+  ctx.clearRect(0,0,W,H);
+  drawBG();
+  slots.forEach(drawLamp);
+  if(state==='play'){
+    frame++;
+    djinns.forEach(d=>{
+      d.grow=Math.min(20,d.grow+1);
+      d.ttl--;
+      if(d.ttl<=0){d.life-=0.04;if(d.life<=0){if(d.slot.occ===d)d.slot.occ=null;}}
+    });
+    djinns=djinns.filter(d=>d.life>0);
+  }
+  djinns.forEach(drawDjinn);
+  drawParts();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>

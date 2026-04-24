@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sheherazades Minne – ALLANDIN</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;600&family=Noto+Sans+Arabic&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:#04010f;min-height:100vh;font-family:'Cinzel',serif;color:#f5c842;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:14px;
+  background-image:
+    radial-gradient(ellipse at 20% 10%,rgba(80,20,120,0.18),transparent 60%),
+    radial-gradient(ellipse at 80% 90%,rgba(200,80,20,0.15),transparent 60%);
+}
+a.back{
+  position:fixed;top:14px;left:14px;text-decoration:none;color:#c8a060;
+  font-size:0.72rem;letter-spacing:3px;border:1px solid rgba(200,160,96,0.4);
+  padding:6px 14px;transition:all 0.2s;
+}
+a.back:hover{background:#f5c842;color:#04010f;border-color:#f5c842;}
+.title{
+  font-family:'Cinzel Decorative',serif;font-size:clamp(1.4rem,4vw,2.2rem);
+  color:#f5c842;text-shadow:0 0 30px rgba(245,200,66,0.4);
+  letter-spacing:4px;margin-top:8px;
+}
+.arabic{font-size:0.95rem;color:#c8a060;letter-spacing:5px;margin:4px 0 6px;}
+.sub{font-size:0.62rem;color:rgba(200,160,96,0.7);letter-spacing:3px;}
+#hud{
+  display:flex;gap:30px;margin:14px 0 10px;padding:8px 22px;
+  background:rgba(0,0,0,0.4);border:1px solid rgba(245,200,66,0.25);
+}
+.hud-cell{text-align:center;}
+.hud-lbl{font-size:0.55rem;letter-spacing:3px;color:#c8a060;margin-bottom:3px;}
+.hud-val{font-size:1rem;color:#f5c842;letter-spacing:2px;}
+#board{
+  display:grid;grid-template-columns:repeat(4,80px);gap:10px;
+  padding:16px;background:rgba(0,0,0,0.45);
+  border:1px solid rgba(245,200,66,0.2);
+  box-shadow:0 0 40px rgba(80,20,120,0.3) inset;
+}
+.card{
+  width:80px;height:96px;position:relative;cursor:pointer;
+  transform-style:preserve-3d;transition:transform 0.5s;
+  perspective:600px;
+}
+.card.flip{transform:rotateY(180deg);}
+.card.lock{cursor:default;}
+.face{
+  position:absolute;inset:0;backface-visibility:hidden;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(245,200,66,0.5);
+}
+.back-face{
+  background:linear-gradient(135deg,#2d1860,#1e0e40);
+  color:#f5c842;font-size:1.7rem;
+}
+.front-face{
+  background:linear-gradient(135deg,#180a05,#2a1208);
+  transform:rotateY(180deg);font-size:2.1rem;
+}
+.card.match .front-face{
+  box-shadow:0 0 16px #f5c842;border-color:#f5c842;
+}
+#overlay{
+  position:fixed;inset:0;background:rgba(4,1,15,0.9);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  z-index:10;
+}
+#overlay.show{display:flex;}
+.btn{
+  margin-top:18px;padding:10px 32px;
+  background:transparent;border:1px solid #f5c842;
+  color:#f5c842;font-family:'Cinzel',serif;font-size:0.82rem;
+  letter-spacing:3px;cursor:pointer;transition:all 0.2s;
+}
+.btn:hover{background:#f5c842;color:#04010f;}
+.ornament{font-size:1.1rem;color:#c8a060;margin:6px 0;}
+#footer{margin-top:16px;font-size:0.58rem;letter-spacing:2px;color:rgba(200,160,96,0.5);text-align:center;}
+@media (max-width:420px){
+  #board{grid-template-columns:repeat(4,64px);gap:7px;padding:10px;}
+  .card{width:64px;height:80px;}
+  .front-face{font-size:1.7rem;}
+  .back-face{font-size:1.4rem;}
+}
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← TILBAKE</a>
+<div class="arabic">✦ شهرزاد ✦</div>
+<div class="title">SHEHERAZADES MINNE</div>
+<div class="sub">FINN PARENE FØR NATTEN ENDER</div>
+<div id="hud">
+  <div class="hud-cell"><div class="hud-lbl">VENDINGER</div><div class="hud-val" id="h-moves">0</div></div>
+  <div class="hud-cell"><div class="hud-lbl">PAR</div><div class="hud-val" id="h-pairs">0 / 8</div></div>
+  <div class="hud-cell"><div class="hud-lbl">TID</div><div class="hud-val" id="h-time">0s</div></div>
+</div>
+<div id="board"></div>
+<div id="footer">✦ klikk på kortene for å vende dem · finn alle 8 par ✦</div>
+
+<div id="overlay">
+  <div class="arabic">✦ تمت الحكاية ✦</div>
+  <div class="title" id="ov-title">EVENTYRET ER FULLFØRT</div>
+  <div class="ornament">⟡ ⟡ ⟡</div>
+  <div id="ov-stats" style="color:#fff;margin:10px 0;font-size:1rem;"></div>
+  <button class="btn" onclick="start()">✦ SPILL IGJEN ✦</button>
+</div>
+
+<script>
+const SYMBOLS=['🕌','🪔','🌙','⭐','🗝️','🧞','🐪','🏺'];
+const board=document.getElementById('board');
+let deck=[],flipped=[],moves=0,pairs=0,lock=false,t0=0,tId=null;
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function tick(){
+  const s=Math.floor((Date.now()-t0)/1000);
+  document.getElementById('h-time').textContent=s+'s';
+}
+
+function start(){
+  board.innerHTML='';
+  document.getElementById('overlay').classList.remove('show');
+  deck=shuffle([...SYMBOLS,...SYMBOLS]);
+  flipped=[];moves=0;pairs=0;lock=false;
+  document.getElementById('h-moves').textContent='0';
+  document.getElementById('h-pairs').textContent='0 / 8';
+  t0=Date.now();
+  if(tId)clearInterval(tId);
+  tId=setInterval(tick,500);
+  document.getElementById('h-time').textContent='0s';
+  deck.forEach((sym,i)=>{
+    const c=document.createElement('div');
+    c.className='card';c.dataset.sym=sym;c.dataset.i=i;
+    c.innerHTML=`<div class="face back-face">✦</div><div class="face front-face">${sym}</div>`;
+    c.addEventListener('click',()=>flip(c));
+    board.appendChild(c);
+  });
+}
+
+function flip(c){
+  if(lock||c.classList.contains('flip')||c.classList.contains('match'))return;
+  c.classList.add('flip');
+  flipped.push(c);
+  if(flipped.length===2){
+    moves++;
+    document.getElementById('h-moves').textContent=moves;
+    lock=true;
+    const [a,b]=flipped;
+    if(a.dataset.sym===b.dataset.sym){
+      setTimeout(()=>{
+        a.classList.add('match','lock');b.classList.add('match','lock');
+        flipped=[];lock=false;pairs++;
+        document.getElementById('h-pairs').textContent=pairs+' / 8';
+        if(pairs===8)win();
+      },360);
+    } else {
+      setTimeout(()=>{
+        a.classList.remove('flip');b.classList.remove('flip');
+        flipped=[];lock=false;
+      },820);
+    }
+  }
+}
+
+function win(){
+  clearInterval(tId);
+  const s=Math.floor((Date.now()-t0)/1000);
+  document.getElementById('ov-stats').innerHTML=
+    `Vendinger: <b>${moves}</b> &nbsp;·&nbsp; Tid: <b>${s}s</b>`;
+  document.getElementById('overlay').classList.add('show');
+}
+
+start();
+</script>
+</body>
+</html>
